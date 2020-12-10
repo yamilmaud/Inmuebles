@@ -1,20 +1,75 @@
+import re
+import Saver
 
-def CrearDiccionario(self, valores_driver):
-    dolar_turista = valores_driver.find_element_by_xpath(self.__XPATH_DOLAR_TURISTA)
-    dolar_blue_compra = valores_driver.find_element_by_xpath(self.__XPATH_DOLAR_BLUE_COMPRA)
-    dolar_blue_venta = valores_driver.find_element_by_xpath(self.__XPATH_DOLAR_BLUE_VENTA)
-    dolar_oficial_compra = valores_driver.find_element_by_xpath(self.__XPATH_DOLAR_OFICIAL_COMPRA)
-    dolar_oficial_venta = valores_driver.find_element_by_xpath(self.__XPATH_DOLAR_OFICIAL_VENTA)
-    today = time.strftime("%d-%m-%Y %H:%M:%S")
+XPATH_PRECIO = '//h2[@class="ar15gris"]/b/text()'
+XPATH_TITULO1 = '//h2[@class="ar15gris"]/text()'
+XPATH_UBICACION = '//table[@class="ar13gris"]//text()'
+XPATH_DESCRIPCION = '//div[@id="infocompleta"]/text()'
+XPATH_MAPA = '//div[@id="divMapa"]/@onclick'
 
-    mi_diccionario = {
-        "Fecha": today,
-        "Dolar Turista": dolar_turista.text,
-        "Dolar Blue Compra": dolar_blue_compra.text,
-        "Dolar Blue Venta": dolar_blue_venta.text,
-        "Dolar Oficial Compra": dolar_oficial_compra.text,
-        "Dolar Oficial Venta": dolar_oficial_venta.text
+REGEX_LOCATION = "(?:LatitudGM=)(.*?)(?:&LongitudGM=)(.*?)(?:')"
+REGEX_PRECIO = "\d.*,?"
 
-    }
-    return mi_diccionario
+
+
+class Scraper:
+    def __init__(self):
+        self.__XPATH_MAPA = XPATH_MAPA
+        self.__XPATH_PRECIO = XPATH_PRECIO
+        self.__XPATH_UBICACION = XPATH_UBICACION
+        self.__XPATH_TITULO1 = XPATH_TITULO1
+        self.__XPATH_DESCRIPCION = XPATH_DESCRIPCION
+
+
+
+
+
+    def CrearDicc(self,parsed2,indice_url, link, source):
+
+        objeto_mapa = parsed2.xpath(XPATH_MAPA)
+        if len(objeto_mapa) > 0:
+            mapa = re.search(REGEX_LOCATION, objeto_mapa[0])
+            latitud = mapa.group(1)
+            longitud = mapa.group(2)
+        else:
+            latitud = "Null"
+            longitud = "Null"
+
+        precio = re.findall(REGEX_PRECIO, (parsed2.xpath(XPATH_PRECIO)[1]))
+        ubicacion = parsed2.xpath(XPATH_UBICACION)
+
+        zona = parsed2.xpath(XPATH_TITULO1)[0] + parsed2.xpath(XPATH_PRECIO)[0].strip()
+        colonia = parsed2.xpath(XPATH_TITULO1)[1].strip() + ' ' + ubicacion[3].strip()
+        title = zona + ' ' + colonia
+
+        description = parsed2.xpath(XPATH_DESCRIPCION)[0].strip()
+
+        if indice_url == 0 or indice_url == 2:
+            land = "Null"
+            construccion = "Null"
+        else:
+            land = ubicacion[7].strip()
+            construccion = ubicacion[6].strip()
+
+        dictionary = {
+            "Price": precio,
+            "Location": ubicacion[1].strip(),
+            "Latitude": latitud.strip(),
+            "Longitude": longitud.strip(),
+            "Link": link,
+            "Title": title.strip(),
+            "Description": description.strip(),
+            "Square Meter Land": land,
+            "Square Meter Construction": construccion,
+            "Bathroom": ubicacion[5].strip(),
+            "Bedroom": ubicacion[4].strip(),
+            "Source": source
+
+        }
+
+        file_name = "Inmobiliarias.csv"
+        instancia_saver = Saver.Saver(file_name)
+        instancia_saver.Crear_Csv(dictionary)
+
+
 

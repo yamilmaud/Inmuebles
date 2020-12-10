@@ -1,163 +1,150 @@
 # -*- coding: utf-8 -*-
 import requests
-import lxml.html as html
-import os
-import datetime
+import locale
+import re
+from lxml import html
+
+import math
 import Saver
 
 
-HOME_URL = "https://www.segundamano.mx/anuncios/nuevo-leon/monterrey/renta-inmuebles/departamentos?orden=date"
-#
-# XPATH_CATEGORIES_NAME = "//div[@class='dropdown category-dropdown']/a/text()"
-# XPATH_CATEGORIES_HREF = "//div[@class='dropdown category-dropdown']/a/@href"
-# xpath_subtegorias_href = '//div[@arialabelledby="{}"]/a/@href'
-# xpath_subtegorias_name ='//div[@arialabelledby="{}"]/a/text()'
-#
-#
-# XPATH_PROD_DETAILS ='//a[@class="btn btn-dark "]/@href'
-#
-# XPATH_NOMBRE_PRECIO_DESCRIP = '//div[@class="align-self-center"]/h5/text()'
-# XPATH_NOMBRE_PRECIO_DESCRIP2 = '//div[@class="align-self-center"]/p/text()'
-# XPATH_DESCRIP2 = '//div[@class="card card-outline-secondary my-4 light-box-shadow"]/div/p/text()'
+HOME_URL = ["https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Renta-Departamentos&PlazaBusqueda=2&Plaza=2&pagina=1&idinmueble=500&pagfinal=24&paginicial=0&Mosaico=0&scl=0",
+            "https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Venta-Departamentos&PlazaBusqueda=2&Plaza=2&pagina=1&idinmueble=300&pagfinal=24&paginicial=0&Mosaico=0&scl=0",
+            "https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Renta-Casas&PlazaBusqueda=2&Plaza=2&pagina=1&idinmueble=5&pagfinal=24&paginicial=0&Mosaico=0&scl=0",
+            "https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Venta-Casas&PlazaBusqueda=2&Plaza=2&pagina=1&idinmueble=3&pagfinal=24&paginicial=0&Mosaico=0&scl=0"]
+
+
+NUEVO_LINK = ["https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Renta-Departamentos&PlazaBusqueda=2&Plaza=2&pagina={}&idinmueble=500&pagfinal=24&paginicial=0&Mosaico=0&scl=0",
+            "https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Venta-Departamentos&PlazaBusqueda=2&Plaza=2&pagina={}&idinmueble=300&pagfinal=24&paginicial=0&Mosaico=0&scl=0",
+            "https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Renta-Casas&PlazaBusqueda=2&Plaza=2&pagina={}&idinmueble=5&pagfinal=24&paginicial=0&Mosaico=0&scl=0",
+            "https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Venta-Casas&PlazaBusqueda=2&Plaza=2&pagina={}&idinmueble=3&pagfinal=24&paginicial=0&Mosaico=0&scl=0"]
 
 
 
+XPATH_HREF_UNIDADES = '//tr/td/a[@class="tituloresult"]/@href'
 
+XPATH_PRECIO = '//h2[@class="ar15gris"]/b/text()'
+
+XPATH_TITULO1 = '//h2[@class="ar15gris"]/text()'
+
+XPATH_UBICACION = '//table[@class="ar13gris"]//text()'
+
+
+XPATH_DESCRIPCION = '//div[@id="infocompleta"]/text()'
+
+
+XPATH_MAPA = '//div[@id="divMapa"]/@onclick'
+XPATH_ULTIMA_PAGINA = '//span[@class="ar13naranja"]/text()'
+
+REGEX_UNIDADES = '(?:"url":")(https://.*?)(?:"})'
+
+REGEX_ULTIMA_PAGINA = "(?:-.* )(\d{1,3},?\d?\d?\d?\d?)"
+REGEX_LOCATION = "(?:LatitudGM=)(.*?)(?:&LongitudGM=)(.*?)(?:')"
+REGEX_LINK = '(?://)(.*?)(?:/)'
+REGEX_SOURCE = "(?:www.)(.*?)(?:.com)"
+REGEX_PRECIO = "\d.*,?"
 
 def parse_home():
     try:
-        response = requests.get(HOME_URL)
-        notice = response.content.decode('utf-8')
-        parsed = html.fromstring(notice)
+        indice_url = 0
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
+        for url in HOME_URL:
 
-        if response.status_code == 200:
+            link = re.findall(REGEX_LINK, url)
+            source = re.findall(REGEX_SOURCE, url)
+            response = requests.get(url)
+            notice = response.content.decode('utf-8')
+            parsed = html.fromstring(notice)
 
-            title = parsed.xpath(XPATH_CATEGORIES_HREF)
-
-
-            indice = 0
-            while indice < len(title):
-                indice_subcategoria = 0
-                categories_name= parsed.xpath(XPATH_CATEGORIES_NAME)
-                nuevolink = title[indice].split('=')[-1]
-                xpath_subtegorias2 = xpath_subtegorias_href.format(nuevolink)
-                subcategoria = parsed.xpath(xpath_subtegorias2)
-
-                xpath_subcategoria_name2 = xpath_subtegorias_name.format(nuevolink)
-                subcategoria_name = parsed.xpath(xpath_subcategoria_name2)
+            ultima_pagina = (parsed.xpath(XPATH_ULTIMA_PAGINA)[0])
+            last_page = int(locale.atof((re.findall(REGEX_ULTIMA_PAGINA, ultima_pagina))[0]))
+            cantidad_paginas = math.ceil(last_page / 24)
 
 
 
 
-                if len(subcategoria) == 0:
-                    nueva_url = HOME_URL + title[indice]
-                    response = requests.get(nueva_url)
-                    notice = response.content.decode('utf-8')
-                    parsed2 = html.fromstring(notice)
-                    prod_deatil = parsed2.xpath(XPATH_PROD_DETAILS)
 
-                    for elemento in prod_deatil:
-                        nueva_url2 = HOME_URL + elemento
-                        response = requests.get(nueva_url2)
-                        notice = response.content.decode('windows-1252')
-                        parsed3 = html.fromstring(notice)
-                        nombre_precio_descip = parsed3.xpath(XPATH_NOMBRE_PRECIO_DESCRIP)
-                        nombre_precio_descip2 = parsed3.xpath(XPATH_NOMBRE_PRECIO_DESCRIP2)
-                        descrip2 = parsed3.xpath(XPATH_DESCRIP2)
+            indice_pagina = 1
+
+
+            while cantidad_paginas >= indice_pagina:
+                contador = 1
+                sigiente_pagina = NUEVO_LINK[indice_url].format(indice_pagina)
+                response3 = requests.get(sigiente_pagina)
+                notice3 = response3.content.decode('utf-8')
+                parsed3 = html.fromstring(notice3)
+                unidades_href = parsed3.xpath(XPATH_HREF_UNIDADES)
 
 
 
-                        if len(nombre_precio_descip2) == 0:
-                          nombre_precio_descip2.append("SIN DESCRIPCION")
+                for elemento in unidades_href:
+                    response2 = requests.get(elemento)
+                    notice2 = response2.content.decode('utf-8')
+                    parsed2 = html.fromstring(notice2)
 
-                        if len(descrip2) == 0:
-                            descrip2.append("SIN DESCRIPCION")
+                    objeto_mapa = parsed2.xpath(XPATH_MAPA)
+                    if len(objeto_mapa) > 0:
+                        mapa = re.search(REGEX_LOCATION, objeto_mapa[0])
+                        latitud = mapa.group(1)
+                        longitud = mapa.group(2)
+                    else:
+                        latitud = "Null"
+                        longitud = "Null"
 
-                        a_guardar = nombre_precio_descip + nombre_precio_descip2 + descrip2
+                    precio = re.findall(REGEX_PRECIO, (parsed2.xpath(XPATH_PRECIO)[1]))
+                    ubicacion = parsed2.xpath(XPATH_UBICACION)
 
+                    zona = parsed2.xpath(XPATH_TITULO1)[0] + parsed2.xpath(XPATH_PRECIO)[0].strip()
+                    colonia = parsed2.xpath(XPATH_TITULO1)[1].strip() + ' ' + ubicacion[3].strip()
+                    title = zona + ' ' + colonia
 
-                        mi_diccionario = {
-                            "Categoria": categories_name[indice].strip(),
-                            "Marca": categories_name[indice].strip(),
-                            "Nombre": a_guardar[0].strip(),
-                            "Precio": a_guardar[1].strip(),
-                            "Descripcion": a_guardar[2].strip(),
-                            "Descripcion adicional": a_guardar[3].strip()
-                        }
-                        file_name = "EmmaSativa.csv"
-                        instancia_saver = Saver.Saver(file_name)
-                        instancia_saver.Crear_Csv(mi_diccionario)
+                    description = parsed2.xpath(XPATH_DESCRIPCION)[0].strip()
 
-                        print(mi_diccionario)
-
-
-
-                else:
-
-                    nueva_url = HOME_URL + title[indice]
-                    response = requests.get(nueva_url)
-                    notice = response.content.decode('utf-8')
-                    parsed2 = html.fromstring(notice)
+                    if indice_url == 0 or indice_url== 2:
+                        land = "Null"
+                        construccion = "Null"
+                    else:
+                        land = ubicacion[7].strip()
+                        construccion = ubicacion[6].strip()
 
 
+                    dictionary = {
+                        "Price": precio,
+                        "Location": ubicacion[1].strip(),
+                        "Latitude": latitud.strip(),
+                        "Longitude":longitud.strip(),
+                        "Link": link,
+                        "Title": title.strip(),
+                        "Description": description.strip(),
+                        "Square Meter Land": land,
+                        "Square Meter Construction": construccion,
+                        "Bathroom": ubicacion[5].strip(),
+                        "Bedroom": ubicacion[4].strip(),
+                        "Source": source
 
-                    for elemento in subcategoria:
+                    }
 
-                        nueva_url3 = HOME_URL + elemento
-                        response = requests.get(nueva_url3)
-                        notice = response.content.decode('utf-8')
-                        parsed2 = html.fromstring(notice)
-                        prod_deatil = parsed2.xpath(XPATH_PROD_DETAILS)
+                    file_name = "Inmobiliarias.csv"
+                    instancia_saver = Saver.Saver(file_name)
+                    instancia_saver.Crear_Csv(dictionary)
 
-                        for elemento in prod_deatil:
-                            nueva_url2 = HOME_URL + elemento
-                            response = requests.get(nueva_url2)
-                            notice = response.content.decode('windows-1252')
-                            parsed3 = html.fromstring(notice)
-                            nombre_precio_descip = parsed3.xpath(XPATH_NOMBRE_PRECIO_DESCRIP)
-                            nombre_precio_descip2 = parsed3.xpath(XPATH_NOMBRE_PRECIO_DESCRIP2)
-                            descrip2 = parsed3.xpath(XPATH_DESCRIP2)
+                    print("nuevo href")
+                    contador += 1
+                    print(contador)
+                indice_pagina += 1
 
-                            if len(nombre_precio_descip2) == 0:
-                                nombre_precio_descip2.append("SIN DESCRIPCION")
+            indice_url += 1
 
-                            if len(descrip2) == 0:
-                                descrip2.append("SIN DESCRIPCION")
 
-                            a_guardar = nombre_precio_descip + nombre_precio_descip2 + descrip2
 
-                            mi_diccionario = {
-                                "Categoria": categories_name[indice].strip(),
-                                "Marca": subcategoria_name[indice_subcategoria].strip(),
-                                "Nombre": a_guardar[0].strip(),
-                                "Precio": a_guardar[1].strip(),
-                                "Descripcion": a_guardar[2].strip(),
-                                "Descripcion adicional": a_guardar[3].strip()
-                            }
-                            print(mi_diccionario)
-                            file_name = "EmmaSativa.csv"
-                            instancia_saver = Saver.Saver(file_name)
-                            instancia_saver.Crear_Csv(mi_diccionario)
 
-                        indice_subcategoria = indice_subcategoria + 1
-                indice += 1
+
 
 
     except ValueError as ve:
         print(ve)
 
 
-
-def run():
-    parse_home()
-
-
-
-
-
-
-
 if __name__ == '__main__':
-    run()
-
+    parse_home()
