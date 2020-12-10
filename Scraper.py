@@ -11,7 +11,6 @@ REGEX_LOCATION = "(?:LatitudGM=)(.*?)(?:&LongitudGM=)(.*?)(?:')"
 REGEX_PRECIO = "\d.*,?"
 
 
-
 class Scraper:
     def __init__(self):
         self.__XPATH_MAPA = XPATH_MAPA
@@ -20,11 +19,7 @@ class Scraper:
         self.__XPATH_TITULO1 = XPATH_TITULO1
         self.__XPATH_DESCRIPCION = XPATH_DESCRIPCION
 
-
-
-
-
-    def CrearDicc(self,parsed2,indice_url, link, source):
+    def crear_dicc(self, parsed2, elemento, source, indice_link):
 
         objeto_mapa = parsed2.xpath(XPATH_MAPA)
         if len(objeto_mapa) > 0:
@@ -44,7 +39,7 @@ class Scraper:
 
         description = parsed2.xpath(XPATH_DESCRIPCION)[0].strip()
 
-        if indice_url == 0 or indice_url == 2:
+        if indice_link%2 == 0:
             land = "Null"
             construccion = "Null"
         else:
@@ -56,7 +51,7 @@ class Scraper:
             "Location": ubicacion[1].strip(),
             "Latitude": latitud.strip(),
             "Longitude": longitud.strip(),
-            "Link": link,
+            "Link": elemento,
             "Title": title.strip(),
             "Description": description.strip(),
             "Square Meter Land": land,
@@ -69,7 +64,4 @@ class Scraper:
 
         file_name = "Inmobiliarias.csv"
         instancia_saver = Saver.Saver(file_name)
-        instancia_saver.Crear_Csv(dictionary)
-
-
-
+        instancia_saver.crear_csv(dictionary)

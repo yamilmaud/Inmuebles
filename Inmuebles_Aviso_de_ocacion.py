@@ -14,20 +14,13 @@ NUEVO_LINK = ["https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Renta
             "https://www.avisosdeocasion.com/Resultados-Inmuebles.aspx?n=Venta-Casas&PlazaBusqueda=2&Plaza=2&pagina={}&idinmueble=3&pagfinal=24&paginicial=0&Mosaico=0&scl=0"]
 
 
-
-
 def parse_home():
     try:
         indice_link = 0
         for url in HOME_URL:
             instancia_crawler_main = Crawler.Crawler(url, NUEVO_LINK[indice_link])
-            instancia_crawler_main.Crawler_Main()
+            instancia_crawler_main.crawler_main(indice_link)
             indice_link += 1
-
-
-
-
-
     except ValueError as ve:
         print(ve)
 
