@@ -22,7 +22,7 @@ class Scraper:
     def crear_dicc(self, parsed2, elemento, source, indice_link):
 
         objeto_mapa = parsed2.xpath(XPATH_MAPA)
-        if len(objeto_mapa) > 0:
+        if len(objeto_mapa) > 0:  # verifica que tenga mapa
             mapa = re.search(REGEX_LOCATION, objeto_mapa[0])
             latitud = mapa.group(1)
             longitud = mapa.group(2)
@@ -32,14 +32,12 @@ class Scraper:
 
         precio = re.findall(REGEX_PRECIO, (parsed2.xpath(XPATH_PRECIO)[1]))
         ubicacion = parsed2.xpath(XPATH_UBICACION)
-
         zona = parsed2.xpath(XPATH_TITULO1)[0] + parsed2.xpath(XPATH_PRECIO)[0].strip()
         colonia = parsed2.xpath(XPATH_TITULO1)[1].strip() + ' ' + ubicacion[3].strip()
         title = zona + ' ' + colonia
-
         description = parsed2.xpath(XPATH_DESCRIPCION)[0].strip()
 
-        if indice_link%2 == 0:
+        if indice_link%2 == 0:  # verificar par o impar, para completar el diccionario
             land = "Null"
             construccion = "Null"
         else:

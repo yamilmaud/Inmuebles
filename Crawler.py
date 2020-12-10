@@ -32,15 +32,13 @@ class Crawler:
 
     def crawler_main(self, indice_link):
 
-        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-
-        # link = re.findall(REGEX_LINK, self.__url)
         source = re.findall(REGEX_SOURCE, self.__url)
         url = self.__url
         parsed = Crawler.crawlear_web(self, url)
-
         ultima_pagina = (parsed.xpath(XPATH_ULTIMA_PAGINA)[0])
+
         # transforma el string con , como separador de mil en entero
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
         last_page = int(locale.atof((re.findall(REGEX_ULTIMA_PAGINA, ultima_pagina))[0]))
         cantidad_paginas = math.ceil(last_page / 24)
 
